@@ -1,0 +1,268 @@
+/* MeroShare.css — shared styles for MS tabs */
+
+.ms-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ms-summary {
+  margin-bottom: 4px;
+}
+
+.ms-card {
+  /* inherits card--np */
+}
+
+.ms-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 14px;
+  background: var(--s1);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ms-state--err {
+  color: var(--r);
+  border-color: rgba(var(--r-rgb), 0.3);
+  background: var(--loss-bg);
+}
+
+.ms-relogin {
+  background: var(--r);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.ms-relogin:hover { opacity: 0.85; }
+
+.ms-search {
+  background: var(--s2);
+  border: 1px solid var(--b);
+  color: var(--fg);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+  width: 180px;
+  transition: border-color 0.15s;
+}
+
+.ms-search:focus { border-color: var(--acc); }
+
+/* MeroShare topbar profile pill */
+.ms-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adim);
+  border: 1px solid var(--glow);
+  border-radius: 20px;
+  padding: 4px 12px 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--acc);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.ms-profile-pill:hover { background: rgba(var(--acc-rgb), 0.22); }
+
+.ms-profile-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--g);
+  flex-shrink: 0;
+}
+
+/* Purchase Source filter buttons (Pending Script / All Script) —
+   reuses the same accent tokens as .tab-btn--active so the selected
+   filter reads consistently with the rest of the app's active-state look. */
+.ms-filter-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--b);
+  border-radius: 8px;
+  background: var(--s2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ms-filter-btn:hover { background: var(--s1); color: var(--fg); }
+
+.ms-filter-btn--active {
+  background: var(--adim);
+  border-color: var(--glow);
+  color: var(--acc);
+}
+
+/* Sub-tab navigation bar (Purchase Source / My Holdings / My WACC) */
+.ms-sub-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--b);
+  padding-bottom: 0;
+  margin-bottom: 4px;
+}
+
+.ms-sub-tab {
+  padding: 9px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ms-sub-tab:hover { color: var(--fg); }
+
+.ms-sub-tab--active {
+  color: var(--acc);
+  border-bottom-color: var(--acc);
+}
+
+/* Warning/amber state for "WACC calculation pending" banner */
+.ms-state--warn {
+  color: var(--warn);
+  border-color: rgba(var(--warn-rgb), 0.35);
+  background: var(--warn-bg);
+}
+
+/* Export buttons row */
+.ms-export-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ms-export-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--b);
+  border-radius: 8px;
+  background: var(--s2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ms-export-btn:hover { background: var(--s1); color: var(--fg); }
+
+/* Purchase Source: script combobox (search input + dropdown arrow) */
+.ms-purchase-source-card {
+  overflow: visible;
+}
+
+.ms-combo-input-wrap {
+  position: relative;
+  overflow: visible;
+  z-index: 20;
+  isolation: isolate;
+}
+
+.ms-combo-input {
+  width: 100% !important;
+  padding-right: 34px !important;
+}
+
+.ms-combo-arrow {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.ms-combo-arrow:hover { color: var(--fg); background: var(--overlay-1); }
+
+.ms-combo-arrow svg { display: block; transition: transform 0.15s ease; }
+.ms-combo-arrow--open svg { transform: rotate(180deg); }
+
+.ms-combo-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  box-shadow: var(--sh-modal);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  z-index: 20;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ms-combo-item {
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ms-combo-item:hover { background: var(--overlay-1); }
+
+.ms-combo-item--active {
+  background: var(--adim);
+  color: var(--acc);
+}
+
+.ms-combo-empty {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Print scope: hide everything except the wacc-report table when printing */
+@media print {
+  body > * { display: none !important; }
+  .ms-print-scope { display: block !important; }
+  .ms-print-scope table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .ms-print-scope th,
+  .ms-print-scope td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+  .ms-print-scope th { background: #f0f0f5; font-weight: 700; }
+}

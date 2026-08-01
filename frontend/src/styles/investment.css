@@ -1,0 +1,32 @@
+/* ── INVESTMENT TAB ───────────────────────────────────────
+   Styles specific to the Investment Portfolio view.
+   ──────────────────────────────────────────────────────── */
+
+/* Badge row in header */
+.inv-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Holding-days accent colour */
+.inv-days { color: var(--acc); }
+
+/* ── Scrip grouping rows ────────────────────────────────── */
+.inv-row--group-start td {
+  border-top: 1px solid var(--b);
+}
+.inv-row--group-cont td {
+  border-top: 1px dashed var(--bdr-soft);
+  background: var(--overlay-1);
+}
+tbody .inv-row--group-start:first-child td {
+  border-top: none;
+}
+
+/* Selected row highlight (for group modal) */
+.inv-selected-row td {
+  background: var(--acc-bg) !important;
+  border-color: var(--bdr-acc) !important;
+}

@@ -1,0 +1,43 @@
+/* ── WATCHLIST TAB ────────────────────────────────────────
+   Styles specific to the Watchlist view.
+   ──────────────────────────────────────────────────────── */
+
+/* Price level highlight */
+.watch-level {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--acc);
+}
+
+/* Support & resistance colours */
+.watch-support    { font-family: var(--mono); font-size: 12px; color: var(--g); }
+.watch-resistance { font-family: var(--mono); font-size: 12px; color: var(--r); }
+
+/* Notes cell clamp */
+.watch-notes {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions cell */
+.watch-actions { white-space: nowrap; }
+
+/* Sector badge variants */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+.badge--banking  { background: rgba(var(--acc-rgb),0.12); color: var(--acc); border: 1px solid rgba(var(--acc-rgb),0.25); }
+.badge--finance  { background: rgba(124,58,237,0.12); color: var(--purple-acc); border: 1px solid rgba(124,58,237,0.25); }
+.badge--it       { background: var(--profit-bg);  color: var(--g); border: 1px solid rgba(var(--g-rgb),0.25);  }
+.badge--gold     { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(var(--warn-rgb),0.25); }
+.badge--default  { background: var(--s2); color: var(--muted); border: 1px solid var(--b); }

@@ -1,0 +1,20 @@
+/* ── LOSING TAB ───────────────────────────────────────────
+   Styles specific to the Losing Trades view.
+   Stat grid styles are shared from Dashboard.css (imported
+   via App.css global cascade).
+   ──────────────────────────────────────────────────────── */
+
+.losing { display: flex; flex-direction: column; gap: 20px; }
+
+/* Badge shown in the card header */
+.loss-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--r);
+  background: var(--loss-bg);
+  border: 1px solid rgba(var(--r-rgb), 0.25);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  align-self: center;
+}

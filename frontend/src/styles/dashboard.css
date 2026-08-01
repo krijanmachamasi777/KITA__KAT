@@ -1,0 +1,461 @@
+/* Dashboard uses the shared design-system tokens from global.css
+   (--s1, --s2, --bg, --b, --fg, --muted, --glow, --g, --r, --acc, --mono)
+   so it follows the active Light/Dark theme like every other tab. */
+
+/* ── DASHBOARD TAB CONTAINER ────────────────────────────── */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--fg);
+  padding: 16px;
+}
+
+/* ── STATS CARDS GRID ───────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card, .emoji-card {
+  background: var(--s1);
+  border: 1px solid var(--b);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: var(--sh-card);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover, .emoji-card:hover {
+  border-color: var(--bdr-acc);
+  box-shadow: var(--sh-card-hov);
+  transform: translateY(-4px);
+}
+
+.stat-card__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.stat-card__value {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--fg);
+  font-family: var(--mono);
+  margin: 4px 0;
+}
+
+.stat-card__sub, .emoji-card__sub {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* ── EMOJI CARD SPECIALS ────────────────────────────────── */
+.emoji-card {
+  align-items: flex-start;
+}
+
+.emoji-card__icon {
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
+
+.emoji-card__label {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ── SIDE-BY-SIDE CHART ROW ────────────────────────────── */
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ── CHART CONTAINER BOX ───────────────────────────────── */
+.chart-box {
+  background: var(--s1);
+  border: 1px solid var(--b);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--sh-card);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-box__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.chart-box__sub {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.6;
+  margin-bottom: 24px;
+}
+
+/* ── PIE CHART SIDE-BY-SIDE INTERNAL LAYOUT ────────────── */
+.pie-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+}
+
+/* Forces Recharts container to share row nicely */
+.pie-row > .recharts-responsive-container {
+  flex: 1 1 50% !important;
+  max-width: 50%;
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 50%;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Modern minimalist scrollbar for long legends */
+.pie-legend::-webkit-scrollbar {
+  width: 4px;
+}
+.pie-legend::-webkit-scrollbar-thumb {
+  background: var(--b);
+  border-radius: 4px;
+}
+
+.pie-legend__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 6px 8px;
+  background: var(--overlay-1);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.pie-legend__item:hover {
+  background: var(--overlay-2);
+  border-color: var(--bdr-soft);
+}
+
+.pie-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.pie-legend__name {
+  flex: 1;
+  color: var(--fg);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pie-legend__val {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.pie-legend__pct {
+  color: var(--muted);
+  opacity: 0.5;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+/* ── DYNAMIC COLOR UTILITIES ────────────────────────────── */
+.v--profit { color: var(--g); text-shadow: 0 0 10px rgba(var(--g-rgb), 0.15); }
+.v--loss   { color: var(--r); text-shadow: 0 0 10px rgba(var(--r-rgb), 0.15); }
+.v--blue   { color: var(--acc); text-shadow: 0 0 10px var(--acc-glow); }
+.v--purple { color: var(--purple-acc); text-shadow: 0 0 10px rgba(124,58,237,0.15); }
+
+/* ── EMPTY STATE SYSTEM ─────────────────────────────────── */
+.chart-empty {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  opacity: 0.5;
+  font-size: 14px;
+  border: 1px dashed var(--b);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* ── BREAKPOINTS & RESPONSIVENESS ───────────────────────── */
+@media (max-width: 1024px) {
+  /* Collapse the side-by-side chart row down to stacked rows on smaller desktops/tablets */
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: 1fr 1fr; /* 2-column grid layout on mobile */
+  }
+  
+  /* Stack the emoji card wide if odd-one-out */
+  .emoji-card {
+    grid-column: span 2;
+  }
+
+  .pie-row {
+    flex-direction: column; /* Stack visual pie above legend text on small screens */
+    gap: 16px;
+  }
+
+  .pie-row > .recharts-responsive-container {
+    max-width: 100%;
+    flex: 1 1 100% !important;
+  }
+
+  .pie-legend {
+    width: 100%;
+    max-height: none;
+  }
+}
+/* ── Dashboard mode switcher ────────────────────────────── */
+.dash-switcher {
+  display: flex;
+  gap: 8px;
+  background: var(--s1);
+  border: 1px solid var(--b);
+  border-radius: 14px;
+  padding: 6px;
+  width: fit-content;
+  margin-bottom: 4px;
+  backdrop-filter: blur(var(--blur-sm));
+}
+
+.dash-switch-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 8px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  transition: all 0.18s;
+}
+
+.dash-switch-btn:hover {
+  background: var(--s2);
+  color: var(--fg);
+}
+
+.dash-switch-btn--active {
+  background: var(--acc-bg);
+  border-color: var(--bdr-acc);
+  color: var(--acc);
+}
+
+/* ── Empty state for charts ─────────────────────────────── */
+.chart-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  border: 1px dashed var(--b);
+  border-radius: 10px;
+  padding: 24px;
+  font-style: italic;
+  opacity: 0.6;
+}
+
+/* ── Responsive tweaks ──────────────────────────────────── */
+@media (max-width: 640px) {
+  .dash-switcher { width: 100%; }
+  .dash-switch-btn { flex: 1; text-align: center; padding: 8px 10px; font-size: 12px; }
+}
+/* ── INSIGHT / WARNING BANNER ───────────────────────────── */
+.insight-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--overlay-1);
+  border: 1px solid var(--b);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.insight-banner--warn {
+  border-color: rgba(var(--warn-rgb), 0.35);
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.insight-banner__icon { font-size: 18px; line-height: 1; }
+
+/* ── METRIC TOGGLE BUTTONS (e.g. sector by qty / value) ──── */
+.toggle-group {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+}
+
+.toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.toggle-btn:hover { color: var(--fg); }
+
+.toggle-btn--active {
+  background: var(--acc-bg);
+  color: var(--acc);
+}
+
+.chart-box__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── HOLDING-PERIOD COMPARISON BARS ─────────────────────── */
+.holding-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.holding-compare__row {
+  display: grid;
+  grid-template-columns: 110px 1fr 70px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.holding-compare__label { color: var(--muted); }
+
+.holding-compare__track {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--overlay-1);
+  overflow: hidden;
+}
+
+.holding-compare__fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.holding-compare__fill--win  { background: var(--g); }
+.holding-compare__fill--loss { background: var(--r); }
+
+.holding-compare__value {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-align: right;
+}
+
+/* ── MINI STAT ROW (open positions summary etc.) ────────── */
+.mini-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mini-stat {
+  background: var(--overlay-1);
+  border: 1px solid var(--b);
+  border-radius: 12px;
+  padding: 12px 14px;
+  backdrop-filter: blur(var(--blur-sm));
+}
+
+.mini-stat__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.mini-stat__value {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+/* ── STREAK BADGE ────────────────────────────────────────── */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--overlay-1);
+}
+
+.streak-badge--win  { color: var(--g); }
+.streak-badge--loss { color: var(--r); }
+.streak-badge--none { color: var(--muted); }

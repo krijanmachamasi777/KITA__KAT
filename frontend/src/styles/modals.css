@@ -1,0 +1,338 @@
+/* ── MODALS & OVERLAY ─────────────────────────────────────
+   Shared styles for all modal dialogs:
+   TradeFormModal, InvestFormModal, WatchFormModal,
+   TradeDetailModal, InvDetailModal
+   ──────────────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 16px;
+  animation: overlay-in 0.18s ease;
+}
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--glass-bg-2);
+  border: 1px solid var(--b);
+  border-radius: 18px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  backdrop-filter: blur(var(--blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
+  box-shadow: var(--sh-modal);
+  animation: modal-in 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.modal--form  { max-width: 580px; padding: 24px; }
+.modal--wide  { max-width: 760px; padding: 24px; }
+
+/* ── Header ── */
+.modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.modal__scrip {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--fg);
+}
+
+.modal__tid {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+.modal__close {
+  background: var(--overlay-1);
+  border: 1px solid var(--b);
+  color: var(--muted);
+  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.modal__close:hover {
+  background: var(--r);
+  color: #fff;
+  border-color: var(--r);
+  transform: rotate(90deg);
+}
+
+.modal__divider {
+  height: 1px;
+  background: var(--b);
+  margin: 14px 0;
+}
+
+/* ── Form grid ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-full { grid-column: 1 / -1; }
+
+.f-group { display: flex; flex-direction: column; gap: 5px; }
+
+.f-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.f-input,
+.f-select,
+.f-textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--input-bdr);
+  border-radius: 9px;
+  color: var(--fg);
+  font-size: 13px;
+  padding: 9px 11px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.f-input:focus,
+.f-select:focus,
+.f-textarea:focus {
+  border-color: var(--acc);
+  background: var(--input-bg-focus);
+  box-shadow: 0 0 0 3px var(--acc-bg);
+}
+
+.f-select { cursor: pointer; }
+
+.f-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+/* ── Form actions ── */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--b);
+}
+
+/* ── Modal action row ── */
+.modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--b);
+}
+
+/* ── Table selection for grouped journal rows ── */
+.selected-row {
+  background: var(--acc-bg);
+}
+.selected-row:hover {
+  background: rgba(var(--acc-rgb), 0.16);
+}
+
+/* ── P&L footer (TradeDetailModal) ── */
+.pl-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.pl-footer--profit { background: var(--profit-bg); border: 1px solid rgba(var(--profit-rgb), 0.25); }
+.pl-footer--loss   { background: var(--loss-bg); border: 1px solid rgba(var(--loss-rgb), 0.25); }
+
+.pl-footer__emoji { font-size: 24px; }
+
+.pl-footer__label         { font-weight: 700; font-size: 13px; }
+.pl-footer__label--profit { color: var(--g); }
+.pl-footer__label--loss   { color: var(--r); }
+
+.pl-footer__sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+.pl-footer__sub--metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.pl-footer__metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.pl-footer__metric strong {
+  font-weight: 700;
+  color: inherit;
+}
+.pl-footer__metric--percent {
+  color: var(--acc);
+}
+
+/* ── Investment P&L block (InvDetailModal) ── */
+.inv-pl-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.inv-pl-block--profit { background: var(--profit-bg); border: 1px solid rgba(var(--profit-rgb), 0.25); }
+.inv-pl-block--loss   { background: var(--loss-bg); border: 1px solid rgba(var(--loss-rgb), 0.25); }
+
+.inv-pl-left { display: flex; align-items: center; gap: 12px; }
+
+.inv-pl__big        { font-size: 22px; font-weight: 800; }
+.inv-pl__big--p     { color: var(--g); }
+.inv-pl__big--l     { color: var(--r); }
+.inv-pl__sub        { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 3px; }
+
+.gain-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.gain-chip {
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 90px;
+}
+
+.gain-chip__lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+.gain-chip__val { font-size: 15px; font-weight: 800; font-family: var(--mono); }
+
+/* ── Holding banner ── */
+.inv-holding {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Section label ── */
+.inv-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+/* ── Remarks strip ── */
+.inv-remarks {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 14px;
+}
+
+.inv-remarks__text {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ── Status badges ── */
+.status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sb--holding { background: var(--profit-bg); color: var(--g); border: 1px solid rgba(var(--profit-rgb), 0.25); }
+.sb--sold    { background: var(--acc-bg); color: var(--acc); border: 1px solid var(--bdr-acc); }
+
+/* ── R:R badge ── */
+.rr-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--adim);
+  border: 1px solid var(--glow);
+  color: var(--acc);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .modal--form,
+  .modal--wide { padding: 16px; }
+}
+
+/* ── Investment group modal: per-row action buttons ── */
+.inv-row-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.btn--xs {
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+  line-height: 1.4;
+  min-width: 0;
+}
