@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://kita-kat.onrender.com" }
+    { "source": "/api/:path*", "destination": "https://kitakat-backend.onrender.com/api/:path*" }
   ]
 }
