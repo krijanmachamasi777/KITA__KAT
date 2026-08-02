@@ -44,12 +44,6 @@ export const getSyncLogs  = (token)         => apiFetch("/sync/logs", token);
 export const refreshPortfolio = (token) =>
   apiFetch("/portfolio/refresh", token, { method: "POST" });
 
-export const sendNotificationEmail = (token, payload) =>
-  apiFetch("/notifications/send-email", token, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-
 // ── Journal trades ─────────────────────────────────────────────────────────
 export const getJournalTrades = (token) =>
   apiFetch("/journal-trades", token);

@@ -57,29 +57,5 @@ const loginLimiter = rateLimit({
 // NOTE: This limiter must be applied AFTER the `protect` middleware in
 // routes/index.js so that req.user.id is available for the keyGenerator.
 //
-const emailNotificationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10,                    // 10 emails per user per hour
 
-  standardHeaders: true,
-  legacyHeaders: false,
-
-  // Key by authenticated user ID — set by auth middleware before this runs.
-  // Falls back to IP if (somehow) user is missing, which should never happen
-  // on a protected route.
-  keyGenerator: (req) => req.user?.id?.toString() || ipKeyGenerator(req.ip),
-
-  message: {
-    success: false,
-    message: "Too many notification emails sent. Please try again in an hour.",
-  },
-
-  handler: (req, res, _next, options) => {
-    logger.warn(
-      `🚫 Email rate limit hit | User: ${req.user?.username || req.ip}`
-    );
-    res.status(options.statusCode).json(options.message);
-  },
-});
-
-module.exports = { loginLimiter, emailNotificationLimiter };
+module.exports = { loginLimiter };

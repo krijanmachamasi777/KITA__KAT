@@ -131,16 +131,6 @@ function validateObjectIdParam(req, res, next) {
   next();
 }
 
-// ── Notification email validation ─────────────────────────────────
-function validateNotificationEmail(req, res, next) {
-  if (!requireObjectBody(req, res)) return;
-  const subject = cleanString(req.body.subject, { max: 200 });
-  const message = cleanString(req.body.message, { max: 10000 });
-  if (!subject) return fail(res, "subject is required.");
-  if (!message) return fail(res, "message is required.");
-  req.body = { subject, message };
-  next();
-}
 
 // ── Purchase Source validation ─────────────────────────────────────
 //
@@ -247,7 +237,6 @@ module.exports = {
   validateWatchlistCreate: validateWatchlistItem({ requireScrip: true }),
   validateWatchlistUpdate: validateWatchlistItem({ requireScrip: false }),
   validateObjectIdParam,
-  validateNotificationEmail,
   validatePurchaseScripts,
   validatePurchaseSearch,
   validatePurchaseUpload,
