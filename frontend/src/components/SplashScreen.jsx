@@ -63,7 +63,6 @@ export function SplashScreen({ onFinish }) {
           <div className={`splash__bar-fill${barFill ? " splash__bar-fill--go" : ""}`} />
         </div>
       </div>
-     
     </div>
   );
 }
