@@ -281,14 +281,14 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Security badge */}
+          {/* Security badge
           <div className="lp-info-badge">
             <span className="lp-info-badge__ico">🔒</span>
             <p className="lp-info-badge__txt">
               Your credentials are <strong>never stored</strong>. They are used
               only to fetch your holdings and WACC directly from MeroShare.
             </p>
-          </div>
+          </div> */}
 
           {error && (
             <div className="lp-alert">

@@ -270,7 +270,7 @@ export default function App() {
             <div className="kk-sync-screen__icon">📊</div>
             <h2 className="kk-sync-screen__title">Syncing your portfolio…</h2>
             <p className="kk-sync-screen__sub">
-              Fetching fresh data from MeroShare. This runs on every login.
+              Fetching fresh data from MeroShare.
             </p>
             <div className="kk-spinner" />
           </div>
