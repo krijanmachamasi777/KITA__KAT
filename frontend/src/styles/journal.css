@@ -37,8 +37,13 @@
 
 /* ── HISTORY MODAL ─────────────────────────────────────── */
 .modal--history {
+  /* An explicit width (not just max-width + inherited 100%) so the
+     popup's own size is fixed and can never shrink-wrap around
+     however many rows the search/date filters currently show. It's
+     still responsive: on a narrow screen it falls back to the
+     viewport width minus the overlay's 16px padding on each side. */
+  width: min(1100px, calc(100vw - 32px));
   max-width: 1100px;
-  width: 100%;
   padding: 24px;
 }
 
@@ -55,6 +60,18 @@
   min-width: 150px;
 }
 
+/* Search box gets a fixed width so it stays constant size — otherwise
+   the flex layout resizes it based on the typed text / result count. */
+.history-filters__search {
+  flex: 0 0 200px;
+  min-width: 200px;
+}
+
+.history-filters__search .f-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .history-filters__clear {
   margin-bottom: 1px;
 }
@@ -68,6 +85,50 @@
 .history-table-card {
   border-radius: 12px;
 }
+
+/* ── Locked column widths for History tables ──────────────────
+   Default table-layout is "auto", which recalculates each column's
+   width from whatever rows are CURRENTLY visible — so the whole
+   table reshapes every time the search/date filters narrow the
+   result set. table-layout: fixed + explicit % widths makes the
+   column widths constant no matter how many rows match.
+   Scoped ONLY to the History modals (via these two classes) so the
+   main Journal/Investment/Losing tab tables are unaffected. */
+.history-table-card--journal table,
+.history-table-card--investment table {
+  table-layout: fixed;
+  min-width: 900px;
+}
+
+/* JournalTable columns (Journal & Losing History):
+   SN · TSN · SCRIPT · Quantity · Buy Rate · Sell Rate ·
+   Buy Amount · Sold Amount · LTP · Value as of LTP · P&L */
+.history-table-card--journal th:nth-child(1)  { width: 5%; }
+.history-table-card--journal th:nth-child(2)  { width: 8%; }
+.history-table-card--journal th:nth-child(3)  { width: 12%; }
+.history-table-card--journal th:nth-child(4)  { width: 8%; }
+.history-table-card--journal th:nth-child(5)  { width: 10%; }
+.history-table-card--journal th:nth-child(6)  { width: 10%; }
+.history-table-card--journal th:nth-child(7)  { width: 11%; }
+.history-table-card--journal th:nth-child(8)  { width: 11%; }
+.history-table-card--journal th:nth-child(9)  { width: 8%; }
+.history-table-card--journal th:nth-child(10) { width: 11%; }
+.history-table-card--journal th:nth-child(11) { width: 6%; }
+
+/* InvestmentTable columns (Investment History):
+   SN · SCRIPT · Sector · Quantity · Buy Rate · Bought Date ·
+   Bought Amount · Holding Days · LTP · Value as of LTP · Status */
+.history-table-card--investment th:nth-child(1)  { width: 5%; }
+.history-table-card--investment th:nth-child(2)  { width: 12%; }
+.history-table-card--investment th:nth-child(3)  { width: 10%; }
+.history-table-card--investment th:nth-child(4)  { width: 8%; }
+.history-table-card--investment th:nth-child(5)  { width: 9%; }
+.history-table-card--investment th:nth-child(6)  { width: 10%; }
+.history-table-card--investment th:nth-child(7)  { width: 10%; }
+.history-table-card--investment th:nth-child(8)  { width: 10%; }
+.history-table-card--investment th:nth-child(9)  { width: 8%; }
+.history-table-card--investment th:nth-child(10) { width: 10%; }
+.history-table-card--investment th:nth-child(11) { width: 8%; }
 
 /* ── Responsive ── */
 @media (max-width: 720px) {

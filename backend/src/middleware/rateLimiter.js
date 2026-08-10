@@ -37,25 +37,51 @@ const loginLimiter = rateLimit({
   },
 });
 
-// ── Email notification limiter ────────────────────────────────────────────
+// ── General API limiter ───────────────────────────────────────────────────
 //
-// FIX [HIGH — SEC-5]: No rate limiting on POST /notifications/send-email
+// FIX [MEDIUM — SEC-6]: No rate limit on any endpoint except /auth/login.
 //
-// BUG (original): The notification email endpoint had no rate limiter. Any
-// authenticated user could call it in a tight loop, sending thousands of
-// emails through the configured SMTP account (Gmail App Password). This could:
-//   • Exhaust the Gmail account's daily sending quota instantly
-//   • Trigger Google's abuse detection and permanently suspend the sending account
-//   • Be used to harass a user by flooding their inbox
+// BUG (original): Once a client had a valid JWT, every other endpoint —
+// creating/editing trades, refreshing the portfolio, watchlist, purchase
+// source lookups (which call the live MeroShare API), etc. — could be
+// called as fast as the caller wanted. A leaked/stolen token, a buggy
+// frontend retry loop, or a malicious script could hammer the API and the
+// upstream MeroShare service with no limit at all.
 //
-// FIX: A per-user rate limiter (keyed on req.user.id, set by the auth
-// middleware that runs before this endpoint) allows at most 10 notification
-// emails per hour. The user-ID key ensures the limit is per account, not per
-// IP — important because the same user could make requests from multiple IPs
-// (VPN, mobile data, etc.) or multiple users could share an office IP.
+// FIX: A general-purpose limiter (300 requests / 15 min) applied to every
+// route AFTER `protect` in routes/index.js. Keyed by the authenticated
+// user's account ID (not IP) — because this only runs on protected routes,
+// req.user.id is always set by then. This means one heavy user never
+// throttles other users on the same network (office WiFi, VPN, etc.), and
+// it can't be bypassed by switching IPs since it follows the account, not
+// the connection.
 //
-// NOTE: This limiter must be applied AFTER the `protect` middleware in
-// routes/index.js so that req.user.id is available for the keyGenerator.
+// This is intentionally a generous ceiling — it exists to stop runaway
+// scripts/loops and credential-stuffing style abuse, not to limit normal
+// human usage of the app.
 //
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
 
-module.exports = { loginLimiter };
+  standardHeaders: true,
+  legacyHeaders: false,
+
+  // Always runs after `protect`, so req.user.id is guaranteed to be set.
+  // ipKeyGenerator fallback kept only as a defensive safety net.
+  keyGenerator: (req, res) => (req.user?.id ? `user-${req.user.id}` : ipKeyGenerator(req, res)),
+
+  message: {
+    success: false,
+    message: "Too many requests. Please slow down and try again shortly.",
+  },
+
+  handler: (req, res, _next, options) => {
+    logger.warn(
+      `🚫 API rate limit hit | User: ${req.user?.username || "unknown"} | Path: ${req.originalUrl}`
+    );
+    res.status(options.statusCode).json(options.message);
+  },
+});
+
+module.exports = { loginLimiter, apiLimiter };

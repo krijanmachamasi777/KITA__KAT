@@ -22,6 +22,7 @@ import "../styles/journal.css";
 export function InvestmentHistoryModal({ investments, onScripClick, onClose }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [scripQuery, setScripQuery] = useState("");
 
   // All investments hidden from the Investment tab (sold >= 90 days ago)
   const historyInvestments = useMemo(
@@ -29,20 +30,24 @@ export function InvestmentHistoryModal({ investments, onScripClick, onClose }) {
     [investments]
   );
 
-  // Apply the From/To Sold Date range filter (inclusive on both ends)
+  // Apply the Script search + From/To Sold Date range filters together
   const filteredInvestments = useMemo(() => {
-    if (!fromDate && !toDate) return historyInvestments;
+    const query = scripQuery.trim().toUpperCase();
+    if (!query && !fromDate && !toDate) return historyInvestments;
     return historyInvestments.filter(i => {
+      if (query && !(i.scrip || "").toUpperCase().includes(query)) return false;
       const sold = i.soldDate;
-      if (!sold) return false;
-      if (fromDate && sold < fromDate) return false;
-      if (toDate && sold > toDate) return false;
+      if (fromDate || toDate) {
+        if (!sold) return false;
+        if (fromDate && sold < fromDate) return false;
+        if (toDate && sold > toDate) return false;
+      }
       return true;
     });
-  }, [historyInvestments, fromDate, toDate]);
+  }, [historyInvestments, scripQuery, fromDate, toDate]);
 
-  const hasFilter = Boolean(fromDate || toDate);
-  const clearFilters = () => { setFromDate(""); setToDate(""); };
+  const hasFilter = Boolean(scripQuery || fromDate || toDate);
+  const clearFilters = () => { setScripQuery(""); setFromDate(""); setToDate(""); };
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -59,6 +64,16 @@ export function InvestmentHistoryModal({ investments, onScripClick, onClose }) {
         <div className="modal__divider" />
 
         <div className="history-filters">
+          <div className="f-group history-filters__field history-filters__search">
+            <label className="f-label">Search Script</label>
+            <input
+              type="text"
+              className="f-input"
+              placeholder="e.g. NABIL"
+              value={scripQuery}
+              onChange={e => setScripQuery(e.target.value)}
+            />
+          </div>
           <div className="f-group history-filters__field">
             <label className="f-label">From Date</label>
             <input
@@ -91,7 +106,7 @@ export function InvestmentHistoryModal({ investments, onScripClick, onClose }) {
           </span>
         </div>
 
-        <div className="card--np history-table-card">
+        <div className="card--np history-table-card history-table-card--investment">
           <InvestmentTable investments={filteredInvestments} onScripClick={onScripClick} />
         </div>
       </div>

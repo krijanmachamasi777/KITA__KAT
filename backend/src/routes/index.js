@@ -6,7 +6,7 @@ const journalCtrl      = require("../controllers/journalController");
 const watchlistCtrl    = require("../controllers/watchlistController");
 const purchaseSourceCtrl = require("../controllers/purchaseSourceController");
 const protect          = require("../middleware/auth");
-const { loginLimiter } = require("../middleware/rateLimiter");
+const { loginLimiter, apiLimiter } = require("../middleware/rateLimiter");
 const {
   validateJournalTrade,
   validateInvestmentTrade,
@@ -30,6 +30,8 @@ router.post("/auth/login", loginLimiter, authCtrl.login);
 
 // ── Protected routes (JWT required) ──────────────────────────────────
 router.use(protect);
+// SEC-6: general 300 req / 15 min ceiling, per account, on every route below.
+router.use(apiLimiter);
 
 router.get("/auth/me",             authCtrl.getMe);
 router.post("/auth/logout",        authCtrl.logout);

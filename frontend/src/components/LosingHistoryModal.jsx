@@ -23,6 +23,7 @@ import "../styles/journal.css";
 export function LosingHistoryModal({ trades, onScripClick, onClose }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [scripQuery, setScripQuery] = useState("");
 
   // All losing trades hidden from the Losing tab (sold >= 90 days ago)
   const historyTrades = useMemo(
@@ -30,25 +31,29 @@ export function LosingHistoryModal({ trades, onScripClick, onClose }) {
     [trades]
   );
 
-  // Apply the From/To Sold Date range filter (inclusive on both ends)
+  // Apply the Script search + From/To Sold Date range filters together
   const filteredTrades = useMemo(() => {
-    if (!fromDate && !toDate) return historyTrades;
+    const query = scripQuery.trim().toUpperCase();
+    if (!query && !fromDate && !toDate) return historyTrades;
     return historyTrades.filter(t => {
+      if (query && !(t.scrip || "").toUpperCase().includes(query)) return false;
       const sold = t.soldDate;
-      if (!sold) return false;
-      if (fromDate && sold < fromDate) return false;
-      if (toDate && sold > toDate) return false;
+      if (fromDate || toDate) {
+        if (!sold) return false;
+        if (fromDate && sold < fromDate) return false;
+        if (toDate && sold > toDate) return false;
+      }
       return true;
     });
-  }, [historyTrades, fromDate, toDate]);
+  }, [historyTrades, scripQuery, fromDate, toDate]);
 
   // Same ordering rule used by the Journal/Losing tabs so TSN groups stay together
   const sortedTrades = useMemo(() => {
     return [...filteredTrades].sort((a, b) => (a.boughtDate || "").localeCompare(b.boughtDate || ""));
   }, [filteredTrades]);
 
-  const hasFilter = Boolean(fromDate || toDate);
-  const clearFilters = () => { setFromDate(""); setToDate(""); };
+  const hasFilter = Boolean(scripQuery || fromDate || toDate);
+  const clearFilters = () => { setScripQuery(""); setFromDate(""); setToDate(""); };
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -65,6 +70,16 @@ export function LosingHistoryModal({ trades, onScripClick, onClose }) {
         <div className="modal__divider" />
 
         <div className="history-filters">
+          <div className="f-group history-filters__field history-filters__search">
+            <label className="f-label">Search Script</label>
+            <input
+              type="text"
+              className="f-input"
+              placeholder="e.g. NABIL"
+              value={scripQuery}
+              onChange={e => setScripQuery(e.target.value)}
+            />
+          </div>
           <div className="f-group history-filters__field">
             <label className="f-label">From Date</label>
             <input
@@ -97,7 +112,7 @@ export function LosingHistoryModal({ trades, onScripClick, onClose }) {
           </span>
         </div>
 
-        <div className="card--np history-table-card">
+        <div className="card--np history-table-card history-table-card--journal">
           <JournalTable trades={sortedTrades} onScripClick={onScripClick} />
         </div>
       </div>
