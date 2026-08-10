@@ -251,6 +251,14 @@ exports.getJournalTrades = async (req, res) => {
     const importedJournalEntries = allJournalEntries.filter((e) => e.origin === "ms");
     const manualJournalEntries   = allJournalEntries.filter((e) => e.origin !== "ms");
 
+    // Index manual entries by scrip so imported rows can reuse an existing
+    // manual TSN when the bought dates are close (within the same 12-day
+    // proximity window used elsewhere). This prevents creating duplicate
+    // TSNs when the user already added a manual row for the same purchase.
+    const manualByScrip = Object.fromEntries(
+      manualJournalEntries.filter((e) => e && e.scrip && e.tsn).map((e) => [normalizeScript(e.scrip), e])
+    );
+
     // STEP 1 — Move any existing journal row whose OWN boughtDate has now
     // crossed 60 days. This is the only thing that ever moves a row.
     const movedIds = await autoMoveJournalToInvestment(importedJournalEntries, JournalEntry, InvestmentEntry);
@@ -282,6 +290,19 @@ exports.getJournalTrades = async (req, res) => {
 
     let tsnCounter   = getNextTsnCounter([...manualJournalEntries, ...remainingImported]);
     const tsnHistory = {}; // scrip → [{ tsn, boughtDate }]
+
+    // Seed tsnHistory with existing manual and imported journal entries
+    // so that when we process WACC rows we can reuse TSNs already present
+    // in the database for the same scrip (common with multiple WACC rows).
+    for (const e of [...manualJournalEntries, ...remainingImported]) {
+      try {
+        const s = normalizeScript(e.scrip);
+        if (!s || !e.tsn) continue;
+        (tsnHistory[s] = tsnHistory[s] || []).push({ tsn: e.tsn, boughtDate: e.boughtDate || "" });
+      } catch (err) {
+        // Defensive: ignore malformed entries
+      }
+    }
     const toInsert   = [];
     const resultRows = []; // ms-origin rows we will return (existing + newly inserted)
 
@@ -347,18 +368,33 @@ exports.getJournalTrades = async (req, res) => {
       }
 
       // Bucket is "journal" — queue for insert, assign TSN
-      const recent = (tsnHistory[scrip] || []).slice().reverse().find((h) => {
-        if (!h.boughtDate || !boughtDate) return false;
-        return Math.abs(Math.round(
-          (new Date(boughtDate) - new Date(h.boughtDate)) / 86_400_000
-        )) <= 12;
-      });
+      // Prefer reusing a nearby manual TSN if one exists (prevents separate
+      // TSNs when the user already recorded the trade manually).
+      let assignedTsn = null;
+      const manualMatch = manualByScrip[scrip];
+      if (manualMatch && boughtDate && manualMatch.boughtDate) {
+        const diff = Math.abs(Math.round((new Date(boughtDate) - new Date(manualMatch.boughtDate)) / 86_400_000));
+        if (diff <= 12) {
+          assignedTsn = manualMatch.tsn;
+        }
+      }
 
-      const tsn = recent?.tsn || `TSN${String(tsnCounter++).padStart(3, "0")}`;
-      (tsnHistory[scrip] = tsnHistory[scrip] || []).push({ tsn, boughtDate });
+      // Fall back to reusing a TSN created earlier in this same import run
+      // (tsnHistory) or allocate a fresh one.
+      if (!assignedTsn) {
+        const recent = (tsnHistory[scrip] || []).slice().reverse().find((h) => {
+          if (!h.boughtDate || !boughtDate) return false;
+          return Math.abs(Math.round(
+            (new Date(boughtDate) - new Date(h.boughtDate)) / 86_400_000
+          )) <= 12;
+        });
+        assignedTsn = recent?.tsn || `TSN${String(tsnCounter++).padStart(3, "0")}`;
+      }
+
+      (tsnHistory[scrip] = tsnHistory[scrip] || []).push({ tsn: assignedTsn, boughtDate });
 
       toInsert.push({
-        tsn, scrip, qty, buyRate, sellRate: 0, buyAmt, soldAmt: 0,
+        tsn: assignedTsn, scrip, qty, buyRate, sellRate: 0, buyAmt, soldAmt: 0,
         ltp, valueAsOfLtp, boughtDate, soldDate: "", rr: "—",
         remarks, imported: true, origin: "ms", waccId,
       });

@@ -33,15 +33,6 @@ const FILTERS = [
   { id: "all",     label: "All Script",      isFilterByAllScript: true  },
 ];
 
-// A record is editable only when the backend flags it as such —
-// driven entirely by the API, not by purchaseSource type.
-function isRecordEditable(record) {
-  if (!record) return false;
-  if (record.isEdit === false) return false;
-  if (record.isValidForRateChange === false) return false;
-  return true;
-}
-
 // ── CSV export helper (no external library) ───────────────────────────
 function downloadCsv(rows, filename) {
   if (!rows || rows.length === 0) return;
@@ -251,7 +242,11 @@ function PurchaseSourceTab() {
     try {
       const result = await searchPurchaseWacc(scrip);
       setSearchResult(result);
-      setEditedRecords(Array.isArray(result?.waccUpdateResponse) ? result.waccUpdateResponse : []);
+      // Seed each record with local-only selection/remarks state, mirroring
+      // the real MeroShare "Purchase Source" screen: nothing is selected by
+      // default, so nothing is priced/costed until the user checks it.
+      const records = Array.isArray(result?.waccUpdateResponse) ? result.waccUpdateResponse : [];
+      setEditedRecords(records.map(r => ({ ...r, _checked: false, remarks: r.remarks || "" })));
     } catch (e) {
       setApiErrors(prev => ({ ...prev, search: e.message || "Search failed." }));
     } finally {
@@ -266,14 +261,49 @@ function PurchaseSourceTab() {
     );
   };
 
+  const handleRemarksChange = (recordId, value) => {
+    setEditedRecords(prev =>
+      prev.map(r => (r.id === recordId ? { ...r, remarks: value } : r))
+    );
+  };
+
+  // Selecting a transaction is what tells the system "calculate WACC for
+  // this quantity now" — matches the real MeroShare flow where you choose
+  // which kitta/transactions to include, rather than forcing every pending
+  // row at once. Checking a row auto-fills its price from the declared
+  // rate (still editable); unchecking clears it back to 0, same as the
+  // live site's behaviour. Every row in this table is selectable — the
+  // API's isEdit/isValidForRateChange flags don't gate this on the real
+  // site, so we don't gate it here either.
+  const handleToggleCheck = (recordId) => {
+    setEditedRecords(prev =>
+      prev.map(r => {
+        if (r.id !== recordId) return r;
+        const nextChecked = !r._checked;
+        return { ...r, _checked: nextChecked, userPrice: nextChecked ? r.rate : 0 };
+      })
+    );
+  };
+
+  const handleToggleSelectAll = (checked) => {
+    setEditedRecords(prev =>
+      prev.map(r => ({ ...r, _checked: checked, userPrice: checked ? r.rate : 0 }))
+    );
+  };
+
   // Confirm WACC → upload → auto-view → auto-refresh both lists
+  // Only the transactions the user actually checked are submitted — you can
+  // declare WACC for a subset of pending kitta at a time, same as MeroShare.
   const handleConfirmWacc = async () => {
-    if (loadingUpload || editedRecords.length === 0) return;
+    const toSubmit = editedRecords
+      .filter(r => r._checked)
+      .map(({  ...r }) => r);
+    if (loadingUpload || toSubmit.length === 0) return;
     setLoadingUpload(true);
     setApiErrors(prev => ({ ...prev, upload: null }));
     setUploadStatus(null);
     try {
-      const result    = await confirmPurchaseWacc(editedRecords);
+      const result    = await confirmPurchaseWacc(toSubmit);
       const succeeded = result?.statusCode === 202 || result?.status === "ACCEPTED";
       if (!succeeded) {
         setUploadStatus({ succeeded: false, message: result?.message || "Upload was not accepted." });
@@ -311,9 +341,21 @@ function PurchaseSourceTab() {
 
   const visibleScripts  = scripts.filter(s => !search || String(s).toLowerCase().includes(search.toLowerCase()));
   const showDisclaimer  = disclaimer && disclaimer.isEnabled === true && disclaimer.fieldValue;
-  const showSummaryCard = !loadingSearch && (searchResult?.viewSummary === true || (uploadStatus?.succeeded && !apiErrors.upload));
-  const showUpdateTable = !loadingSearch && searchResult?.viewSummary === false && !uploadStatus?.succeeded;
-  const effectiveSummary = uploadStatus?.succeeded ? summaryData : searchResult?.waccSummaryResponse;
+
+  // Data-presence driven, NOT solely `viewSummary`. CDSC's `viewSummary` flag is a
+  // scrip-level "is everything declared" flag — it does not mean the underlying
+  // per-transaction records are absent. `waccUpdateResponse` can (and does) still
+  // contain real records when viewSummary=true. On the live site every record in
+  // this table is selectable and priceable regardless of isEdit/isValidForRateChange
+  // — those flags don't gate the checkbox/input there, so we don't gate on them
+  // either. We show the summary card whenever a summary exists, and the
+  // transaction table whenever there are records — the two are no longer
+  // mutually exclusive.
+  const effectiveSummary  = uploadStatus?.succeeded ? summaryData : searchResult?.waccSummaryResponse;
+  const showSummaryCard   = !loadingSearch && !!effectiveSummary;
+  const showRecordsTable  = !loadingSearch && !uploadStatus?.succeeded && editedRecords.length > 0;
+  const hasSelectedRecord = editedRecords.some(r => r._checked);
+  const allChecked        = editedRecords.length > 0 && editedRecords.every(r => r._checked);
 
   return (
     <>
@@ -414,9 +456,11 @@ function PurchaseSourceTab() {
                   ? "Searching…"
                   : uploadStatus?.succeeded
                     ? "WACC declared successfully"
-                    : searchResult?.viewSummary
-                      ? "WACC already declared"
-                      : "Pending WACC declaration"}
+                    : editedRecords.length > 0
+                      ? "Pending WACC declaration"
+                      : effectiveSummary
+                        ? "WACC already declared"
+                        : "No purchase records found"}
               </div>
             </div>
             <button className="btn-secondary" onClick={() => runSearch(selectedScript)} disabled={loadingUpload}>
@@ -459,70 +503,99 @@ function PurchaseSourceTab() {
                 </div>
               )}
               {!loadingSummary && !apiErrors.summary && effectiveSummary && (
-                <div className="stat-grid ms-summary" style={{ padding: "0 4px 16px" }}>
-                  <div className="stat-card">
-                    <div className="stat-card__label">Scrip</div>
-                    <div className="stat-card__value v--blue">{effectiveSummary.scripName || "—"}</div>
-                    <div className="stat-card__sub">{effectiveSummary.isin || "—"}</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-card__label">Avg Buy Rate</div>
-                    <div className="stat-card__value">NPR {fmt(effectiveSummary.averageBuyRate)}</div>
-                    <div className="stat-card__sub">Weighted average cost</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-card__label">Total Quantity</div>
-                    <div className="stat-card__value">{fmt(effectiveSummary.totalQuantity)}</div>
-                    <div className="stat-card__sub">Units held</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-card__label">Total Cost</div>
-                    <div className="stat-card__value">NPR {fmt(effectiveSummary.totalCost)}</div>
-                    <div className="stat-card__sub">Total invested</div>
-                  </div>
+                <div className="table-wrap" style={{ padding: "0 4px 16px" }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Scrip</th>
+                        <th>WACC Calculated Quantity</th>
+                        <th>WACC Rate</th>
+                        <th>Total Cost Of Capital</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="td--bold">{effectiveSummary.scripName || "—"}</td>
+                        <td className="td--mono">{fmt(effectiveSummary.totalQuantity)}</td>
+                        <td className="td--mono">{fmt(effectiveSummary.averageBuyRate)}</td>
+                        <td className="td--mono">{fmt(effectiveSummary.totalCost)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </>
           )}
 
-          {showUpdateTable && (
+          {showRecordsTable && (
             <>
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th>#</th><th>ISIN</th><th>Qty</th><th>Rate (NPR)</th>
-                      <th>Your Price (NPR)</th><th>Source</th><th>Transaction Date</th><th>History</th>
+                      <th>#</th>
+                      <th>
+                        {editedRecords.length > 0 && (
+                          <input
+                            type="checkbox"
+                            checked={allChecked}
+                            disabled={loadingUpload}
+                            onChange={e => handleToggleSelectAll(e.target.checked)}
+                            aria-label="Select all transactions"
+                          />
+                        )}
+                      </th>
+                      <th>Scrip</th>
+                      <th>Transaction Date</th>
+                      <th>Transaction Quantity</th>
+                      <th>Rate</th>
+                      <th>Purchase Source</th>
+                      <th>Purchase Price</th>
+                      <th>Total Cost</th>
+                      <th>Remarks</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {editedRecords.length === 0 && (
-                      <tr><td colSpan={8} className="td--empty">No pending WACC records for this scrip.</td></tr>
-                    )}
                     {editedRecords.map((r, i) => {
-                      const editable = isRecordEditable(r);
+                      const totalCost = Number(r.userPrice || 0) * Number(r.transactionQuantity || 0);
                       return (
                         <tr key={r.id ?? i}>
                           <td className="td--muted">{i + 1}</td>
-                          <td className="td--muted td--mono" style={{ fontSize: 11 }}>{r.isin || "—"}</td>
-                          <td className="td--mono">{r.transactionQuantity ?? "—"}</td>
-                          <td className="td--mono td--muted">NPR {fmt(r.rate)}</td>
                           <td>
-                            {editable ? (
-                              <input
-                                type="number" min="0" step="0.01"
-                                className="ms-search" style={{ width: 110 }}
-                                value={r.userPrice ?? ""}
-                                disabled={loadingUpload}
-                                onChange={e => handlePriceChange(r.id, e.target.value === "" ? "" : Number(e.target.value))}
-                              />
-                            ) : (
-                              <span className="td--mono td--bold">NPR {fmt(r.userPrice ?? r.rate)}</span>
-                            )}
+                            <input
+                              type="checkbox"
+                              checked={!!r._checked}
+                              disabled={loadingUpload}
+                              onChange={() => handleToggleCheck(r.id)}
+                              aria-label={`Select transaction ${i + 1}`}
+                            />
                           </td>
-                          <td><span className="badge badge--default">{r.purchaseSource || "—"}</span></td>
+                          <td className="td--bold">{r.scrip || selectedScript || "—"}</td>
                           <td className="td--mono">{r.transactionDate ? String(r.transactionDate).split("T")[0] : "—"}</td>
-                          <td className="td--muted">{r.historyDescription || "—"}</td>
+                          <td className="td--mono">{r.transactionQuantity ?? "—"}</td>
+                          <td className="td--mono td--muted">{fmt(r.rate)}</td>
+                          <td><span className="badge badge--default">{r.purchaseSource || "—"}</span></td>
+                          <td>
+                            <input
+                              type="number" min="0" step="0.01"
+                              className="ms-search" style={{ width: 110 }}
+                              value={r._checked ? (r.userPrice ?? "") : 0}
+                              disabled={loadingUpload || !r._checked}
+                              onChange={e => handlePriceChange(r.id, e.target.value === "" ? "" : Number(e.target.value))}
+                            />
+                          </td>
+                          <td className="td--mono">{fmt(totalCost)}</td>
+                          <td>
+                            <input
+                              type="text"
+                              className="ms-search" style={{ width: 130 }}
+                              value={r.remarks || ""}
+                              disabled={loadingUpload}
+                              onChange={e => handleRemarksChange(r.id, e.target.value)}
+                            />
+                          </td>
+                          <td className="td--muted" title={r.historyDescription || undefined}></td>
                         </tr>
                       );
                     })}
@@ -530,18 +603,23 @@ function PurchaseSourceTab() {
                 </table>
               </div>
               {editedRecords.length > 0 && (
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "0 20px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-start", padding: "16px 20px" }}>
                   <button
                     className="ms-filter-btn ms-filter-btn--active"
                     onClick={handleConfirmWacc}
-                    disabled={loadingUpload}
-                    style={{ opacity: loadingUpload ? 0.6 : 1, cursor: loadingUpload ? "not-allowed" : "pointer" }}
+                    disabled={loadingUpload || !hasSelectedRecord}
+                    style={{ opacity: (loadingUpload || !hasSelectedRecord) ? 0.6 : 1, cursor: (loadingUpload || !hasSelectedRecord) ? "not-allowed" : "pointer" }}
                   >
-                    {loadingUpload ? "⏳ Uploading…" : "✓ Confirm WACC"}
+                    {loadingUpload ? "Uploading…" : "Proceed"}
                   </button>
                 </div>
               )}
             </>
+          )}
+
+          {/* No records at all and no summary — genuinely nothing found for this scrip */}
+          {!loadingSearch && !uploadStatus?.succeeded && editedRecords.length === 0 && !effectiveSummary && (
+            <div className="ms-state">No purchase-source records found for this scrip.</div>
           )}
         </div>
       )}

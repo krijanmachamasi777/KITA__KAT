@@ -1,27 +1,32 @@
 import { useMemo, useState } from "react";
 import { JournalTable } from "./JournalTable";
-import { isAgedOutTrade } from "../utils/helpers";
+import { isAgedOutTrade, isClosedTrade, tradePL } from "../utils/helpers";
 import "../styles/modals.css";
 import "../styles/journal.css";
 
-// ── TRADE HISTORY MODAL ───────────────────────────────────
-// Shows sold trades that have "aged out" of the Journal tab
-// (sold 90 days ago). Nothing is deleted/archived in the DB —
+// ── LOSING HISTORY MODAL ──────────────────────────────────
+// Shows losing trades that have "aged out" of the Losing tab
+// (sold 90+ days ago). Nothing is deleted/archived in the DB —
 // this is a pure client-side view over the same `trades` array
-// already loaded for the Journal tab.
+// already loaded for the Journal/Losing tabs.
+//
+// Mirrors TradeHistoryModal exactly (same CSS classes, same
+// date-range filter behavior), just additionally scoped to
+// trades that are losses (tradePL < 0) — same rule the Losing
+// tab itself uses.
 //
 // Props:
 //   trades       – full array of all trade objects (Journal source data)
 //   onScripClick – open the shared TradeDetailModal for a TSN group
 //   onClose      – dismiss this modal
 
-export function TradeHistoryModal({ trades, onScripClick, onClose }) {
+export function LosingHistoryModal({ trades, onScripClick, onClose }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // All trades hidden from the Journal tab (sold >= 90days ago)
+  // All losing trades hidden from the Losing tab (sold >= 90 days ago)
   const historyTrades = useMemo(
-    () => trades.filter(t => isAgedOutTrade(t)),
+    () => trades.filter(t => isAgedOutTrade(t) && isClosedTrade(t) && tradePL(t) < 0),
     [trades]
   );
 
@@ -37,12 +42,9 @@ export function TradeHistoryModal({ trades, onScripClick, onClose }) {
     });
   }, [historyTrades, fromDate, toDate]);
 
-  // Same ordering rule used by the Journal tab so TSN groups stay together
+  // Same ordering rule used by the Journal/Losing tabs so TSN groups stay together
   const sortedTrades = useMemo(() => {
-    return [...filteredTrades].sort((a, b) => {
-      const dateCompare = (a.boughtDate || "").localeCompare(b.boughtDate || "");
-      return dateCompare || (a.tsn || "").localeCompare(b.tsn || "");
-    });
+    return [...filteredTrades].sort((a, b) => (a.boughtDate || "").localeCompare(b.boughtDate || ""));
   }, [filteredTrades]);
 
   const hasFilter = Boolean(fromDate || toDate);
@@ -53,9 +55,9 @@ export function TradeHistoryModal({ trades, onScripClick, onClose }) {
       <div className="modal modal--history" onClick={e => e.stopPropagation()}>
         <div className="modal__header">
           <div>
-            <div className="modal__scrip">Trade History</div>
+            <div className="modal__scrip">Losing History</div>
             <div className="modal__tid">
-              Sold trades 90+ days ago · click any SCRIPT to view details
+              Losing trades sold 90+ days ago · click any SCRIPT to view details
             </div>
           </div>
           <button className="modal__close" onClick={onClose}>✕</button>

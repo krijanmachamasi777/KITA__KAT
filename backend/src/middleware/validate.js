@@ -170,7 +170,7 @@ function validatePurchaseSearch(req, res, next) {
 // MeroShare even if it slipped past this point.
 const PURCHASE_RECORD_STRING_FIELDS = [
   "isin", "purchaseSource", "historyDescription", "scrip",
-  "knownPrice", "transactionDate",
+  "knownPrice", "transactionDate", "remarks",
 ];
 const PURCHASE_RECORD_NUMERIC_FIELDS = ["id", "transactionQuantity", "rate", "userPrice"];
 const PURCHASE_RECORD_BOOLEAN_FIELDS = ["isEdit", "isValidForRateChange", "viewHistory"];

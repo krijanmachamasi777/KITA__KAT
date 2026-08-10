@@ -20,6 +20,7 @@ import { InvestFormModal }   from "./components/InvestFormModal";
 import { WatchFormModal }    from "./components/WatchFormModal";
 import { TradeHistoryModal } from "./components/TradeHistoryModal";
 import { InvestmentHistoryModal } from "./components/InvestmentHistoryModal";
+import { LosingHistoryModal } from "./components/LosingHistoryModal";
 import { NotificationBell }  from "./components/NotificationBell";
 import logoImg               from "./assets/logo.png";
 import { THEMES, getStoredThemeKey, applyTheme } from "./utils/theme";
@@ -124,6 +125,7 @@ export default function App() {
   const [watchForm,    setWatchForm]   = useState(null);
   const [showHistory,  setShowHistory] = useState(false);
   const [showInvestmentHistory, setShowInvestmentHistory] = useState(false);
+  const [showLosingHistory, setShowLosingHistory] = useState(false);
 
   // ── Load data on login ───────────────────────────────────
   useEffect(function() {
@@ -366,7 +368,7 @@ export default function App() {
                   {tab === "journal"             && <Journal     trades={trades}       onScripClick={setTradeDetail} onHistory={() => setShowHistory(true)} />}
                   {tab === "investment"          && <Investment  investments={investments} onScripClick={setInvDetail} onHistory={() => setShowInvestmentHistory(true)} />}
                   {tab === "watchlist"           && <Watchlist   watchlist={watchlist} onEdit={function(w) { setWatchForm({ mode: "edit", data: w }); }} onDelete={delWatch} />}
-                  {tab === "losing"              && <Losing      trades={trades}       onScripClick={setTradeDetail} />}
+                  {tab === "losing"              && <Losing      trades={trades}       onScripClick={setTradeDetail} onHistory={() => setShowLosingHistory(true)} />}
                   {tab === "ms-portfolio"        && <MSPortfolio />}
                   {tab === "ms-ipos"             && <MSIpos />}
                   {tab === "ms-wacc"             && <MSWacc />}
@@ -389,6 +391,13 @@ export default function App() {
                 trades={trades}
                 onScripClick={setTradeDetail}
                 onClose={function() { setShowHistory(false); }}
+              />
+            )}
+            {showLosingHistory && (
+              <LosingHistoryModal
+                trades={trades}
+                onScripClick={setTradeDetail}
+                onClose={function() { setShowLosingHistory(false); }}
               />
             )}
             {tradeDetail && (
