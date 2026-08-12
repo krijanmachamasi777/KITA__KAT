@@ -75,7 +75,7 @@ export function JournalTable({ trades, onScripClick }) {
                         <span className="badge badge--small" title="Imported from MeroShare"> </span>
                       )}
                       {isSold && (
-                        <span className="badge badge--sold" title="This trade has been sold">✓ SOLD</span>
+                        <span className="badge badge--sold" title="This trade has been sold">SOLD</span>
                       )}
                     </div>
                   ) : null}

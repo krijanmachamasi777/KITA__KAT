@@ -126,7 +126,7 @@ export function InvestmentTable({ investments, onScripClick }) {
                         <span className="badge badge--small" title="Imported from MeroShare"></span>
                       )}
                       {isSold && (
-                        <span className="badge badge--sold" title="This investment has been sold">✓ SOLD</span>
+                        <span className="badge badge--sold" title="This investment has been sold">SOLD</span>
                       )}
                     </div>
                   ) : null}

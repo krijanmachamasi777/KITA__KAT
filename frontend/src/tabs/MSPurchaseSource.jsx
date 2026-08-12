@@ -89,6 +89,25 @@ function printPdf(tableRef) {
 }
 
 
+// ── Never surface raw technical API errors to the user ────────────────
+// Defense-in-depth alongside the backend-level fix in meroshareClient.js
+// (uploadPurchaseSource): if any raw Axios/HTTP-style message ever slips
+// through from any Purchase Source call, this maps it to the same
+// user-friendly guidance shown for the known "unconfirmed purchase price"
+// case, instead of ever rendering "Request failed with status code ###",
+// "API error ###", or similar technical text.
+const FRIENDLY_UPLOAD_ERROR =
+  "Please confirm all purchase prices before proceeding with WACC calculation.";
+
+function toFriendlyPurchaseError(message) {
+  if (!message) return message;
+  if (/request failed with status code/i.test(message) || /^API error \d+$/i.test(message)) {
+    return FRIENDLY_UPLOAD_ERROR;
+  }
+  return message;
+}
+
+
 // ══════════════════════════════════════════════════════════════════════
 // ROOT COMPONENT
 // ══════════════════════════════════════════════════════════════════════
@@ -128,14 +147,12 @@ export function MSPurchaseSource() {
 // ══════════════════════════════════════════════════════════════════════
 function PurchaseSourceTab() {
   const {
-    fetchPurchaseDisclaimer,
     fetchPurchaseScripts,
     searchPurchaseWacc,
     confirmPurchaseWacc,
     fetchPurchaseSummary,
   } = useAuth();
 
-  const [disclaimer,        setDisclaimer]        = useState(null);
   const [filter,            setFilter]            = useState("pending");
   const [pendingScriptList, setPendingScriptList] = useState([]);
   const [allScriptList,     setAllScriptList]     = useState([]);
@@ -166,18 +183,6 @@ function PurchaseSourceTab() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // fetchDisclaimer — once on mount
-  const fetchDisclaimer = useCallback(async () => {
-    try {
-      const data = await fetchPurchaseDisclaimer();
-      setDisclaimer(data || null);
-    } catch (e) {
-      console.warn("fetchDisclaimer failed:", e.message);
-    }
-  }, [fetchPurchaseDisclaimer]);
-
-  useEffect(() => { fetchDisclaimer(); }, [fetchDisclaimer]);
 
   // fetchScripts — lazy, with silent-refresh option
   const fetchScripts = useCallback(async (filterId, { silent = false } = {}) => {
@@ -340,7 +345,6 @@ function PurchaseSourceTab() {
   }, [fetchPurchaseSummary, selectedScript]);
 
   const visibleScripts  = scripts.filter(s => !search || String(s).toLowerCase().includes(search.toLowerCase()));
-  const showDisclaimer  = disclaimer && disclaimer.isEnabled === true && disclaimer.fieldValue;
 
   // Data-presence driven, NOT solely `viewSummary`. CDSC's `viewSummary` flag is a
   // scrip-level "is everything declared" flag — it does not mean the underlying
@@ -359,14 +363,6 @@ function PurchaseSourceTab() {
 
   return (
     <>
-      {showDisclaimer && (
-        <div className="card--np ms-card" style={{ borderColor: "rgba(255,159,10,0.35)", background: "rgba(255,159,10,0.06)" }}>
-          <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--fg)" }}>
-            ⚠️ {disclaimer.fieldValue}
-          </div>
-        </div>
-      )}
-
       <div className="card--np ms-card ms-purchase-source-card">
         <div className="card__header">
           <div>
@@ -412,7 +408,7 @@ function PurchaseSourceTab() {
 
                 {!scriptsLoading && scriptsError && (
                   <div className="ms-combo-empty">
-                    ⚠️ {scriptsError}
+                    ⚠️ {toFriendlyPurchaseError(scriptsError)}
                     <div>
                       <button className="ms-relogin" style={{ marginTop: 8 }} onClick={() => fetchScripts(filter)}>Retry</button>
                     </div>
@@ -472,7 +468,7 @@ function PurchaseSourceTab() {
 
           {!loadingSearch && apiErrors.search && (
             <div className="ms-state ms-state--err">
-              ⚠️ {apiErrors.search}
+              ⚠️ {toFriendlyPurchaseError(apiErrors.search)}
               <button className="ms-relogin" onClick={() => runSearch(selectedScript)}>Retry</button>
             </div>
           )}
@@ -482,14 +478,13 @@ function PurchaseSourceTab() {
               className={`ms-state${uploadStatus.succeeded ? "" : " ms-state--err"}`}
               style={{ padding: "12px 20px", textAlign: "left", flexDirection: "row", justifyContent: "space-between" }}
             >
-              <span>{uploadStatus.succeeded ? "✅" : "⚠️"} {uploadStatus.message}</span>
+              <span>{uploadStatus.succeeded ? "✅" : "⚠️"} {uploadStatus.succeeded ? uploadStatus.message : toFriendlyPurchaseError(uploadStatus.message)}</span>
             </div>
           )}
 
           {apiErrors.upload && (
             <div className="ms-state ms-state--err">
-              ⚠️ {apiErrors.upload}
-              <button className="ms-relogin" onClick={handleConfirmWacc}>Retry Upload</button>
+              ⚠️ {toFriendlyPurchaseError(apiErrors.upload)}
             </div>
           )}
 
@@ -498,7 +493,7 @@ function PurchaseSourceTab() {
               {loadingSummary && <div className="ms-state">⏳ Fetching Summary…</div>}
               {!loadingSummary && apiErrors.summary && (
                 <div className="ms-state ms-state--err">
-                  ⚠️ {apiErrors.summary}
+                  ⚠️ {toFriendlyPurchaseError(apiErrors.summary)}
                   <button className="ms-relogin" onClick={retrySummary}>Retry</button>
                 </div>
               )}
@@ -603,16 +598,28 @@ function PurchaseSourceTab() {
                 </table>
               </div>
               {editedRecords.length > 0 && (
-                <div style={{ display: "flex", justifyContent: "flex-start", padding: "16px 20px" }}>
-                  <button
-                    className="ms-filter-btn ms-filter-btn--active"
-                    onClick={handleConfirmWacc}
-                    disabled={loadingUpload || !hasSelectedRecord}
-                    style={{ opacity: (loadingUpload || !hasSelectedRecord) ? 0.6 : 1, cursor: (loadingUpload || !hasSelectedRecord) ? "not-allowed" : "pointer" }}
-                  >
-                    {loadingUpload ? "Uploading…" : "Proceed"}
-                  </button>
-                </div>
+                <>
+                  {/* Legal declaration — shown ONLY here, i.e. only for
+                      records still in the pending waccUpdateResponse set.
+                      A scrip whose WACC is already completed never reaches
+                      this branch (its records live in waccSummaryResponse /
+                      effectiveSummary instead — see showSummaryCard below),
+                      so this never appears for already-declared WACC, and
+                      it never renders anywhere outside this section. */}
+                  <div className="ms-wacc-declaration">
+                    ⚠️ I hereby declare that the prices that I have set here for WACC calculation purpose are provided with the best of my knowledge and I am aware that I will be held liable for legal consequences if the provided data is found to be incorrect.
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-start", padding: "16px 20px" }}>
+                    <button
+                      className="ms-filter-btn ms-filter-btn--active"
+                      onClick={handleConfirmWacc}
+                      disabled={loadingUpload || !hasSelectedRecord}
+                      style={{ opacity: (loadingUpload || !hasSelectedRecord) ? 0.6 : 1, cursor: (loadingUpload || !hasSelectedRecord) ? "not-allowed" : "pointer" }}
+                    >
+                      {loadingUpload ? "Uploading…" : "Proceed"}
+                    </button>
+                  </div>
+                </>
               )}
             </>
           )}

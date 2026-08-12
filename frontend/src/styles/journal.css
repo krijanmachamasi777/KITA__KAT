@@ -45,6 +45,27 @@
   width: min(1100px, calc(100vw - 32px));
   max-width: 1100px;
   padding: 24px;
+
+  /* Same idea, but for the VERTICAL axis: give the modal a fixed
+     height (min() keeps it responsive on short viewports) instead
+     of the height:auto it inherits from .modal. Without this, the
+     popup shrink-wraps to however many rows the search/date filters
+     currently match, so it grows/shrinks and the whole overlay jumps
+     on every keystroke. .modal's own `overflow-y: auto` is turned
+     off here — only the results list below scrolls, not the modal
+     itself — and the header/filters/list are stacked in a column so
+     the header + filters keep their natural height while the list
+     absorbs whatever space is left. */
+  height: min(700px, 82vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal--history > .modal__header,
+.modal--history > .modal__divider,
+.modal--history > .history-filters {
+  flex-shrink: 0;
 }
 
 /* ── History date-range filter bar ── */
@@ -84,6 +105,16 @@
 
 .history-table-card {
   border-radius: 12px;
+
+  /* Fills whatever vertical space is left inside the fixed-height
+     .modal--history (below the header/filters) and scrolls its own
+     content instead of growing the modal. `min-height: 0` overrides
+     the flex-item default (min-height: auto), which would otherwise
+     let this item's intrinsic content height push it — and the
+     fixed-height parent — taller than intended regardless of `flex`. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ── Locked column widths for History tables ──────────────────

@@ -1059,7 +1059,16 @@ tbody tr:hover {
 
 /* badges */
 .badge {
-  display: inline-block;
+  /* inline-flex (not inline-block) + white-space:nowrap + flex-shrink:0
+     keep multi-character badges like "✓ SOLD" locked to a single line.
+     Previously this was inline-block with no shrink protection, so when
+     squeezed inside a flex row (e.g. next to the scrip button) the
+     checkmark and text wrapped onto separate lines. */
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1076,9 +1085,18 @@ tbody tr:hover {
   display: inline-block;
 }
 .badge--sold {
+  /* Same blue "sold/closed" accent used by .sb--sold elsewhere in the
+     app (e.g. the Investment status column), just as a compact pill
+     for inline use next to the scrip name. */
   background: var(--acc-bg);
   color: var(--acc);
   border: 1px solid var(--bdr-acc);
+  font-size: 9.5px;
+  padding: 3px 9px 3px 7px;
+}
+.badge--sold::before {
+  content: "✓";
+  font-size: 9px;
 }
 .badge--banking {
   background: rgba(var(--acc-rgb), 0.12);

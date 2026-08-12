@@ -311,14 +311,18 @@ class MeroShareClient {
 
   // POST /api/myPurchase/upload/
   // Submits the edited WACC records (rate/userPrice changes) for the scrips
-  // currently shown in the update table. The payload is the array exactly
-  // as maintained in the UI — this method does not reshape it, it only
-  // re-stamps `demat` on every record server-side so a tampered/missing
-  // demat in the client payload can never reach MeroShare.
+  // currently shown in the update table.
   //
-  // Works for any purchaseSource value (IPO, FPO, Right Share, Bonus,
-  // Auction, …) since the records are passed through as-is — nothing here
-  // is IPO-specific.
+  // CDSC's /upload/ endpoint validates the *whole posted array* atomically —
+  // if even one record lacks a confirmed purchase price, it 404s the entire
+  // batch and nothing gets confirmed, even records that were otherwise fine.
+  // To avoid blocking good records on one bad one, each record is submitted
+  // as its own single-element array so its outcome is tracked independently.
+  //
+  // Returns { confirmed: [...], unconfirmed: [...] } on partial/full success.
+  // Throws only when EVERY record failed with a CDSC 404 (nothing to show),
+  // or on any non-404 (network/5xx/timeout) failure, which still propagates
+  // as-is so it's logged and surfaced normally.
   async uploadPurchaseSource(records = []) {
     this._requireAuth();
     this._requireBoid();
@@ -328,17 +332,62 @@ class MeroShareClient {
       demat: this.boid,
     }));
 
-    const res = await http.post(
-      `${PURCHASE_URL}/upload/`,
-      stamped,
-      { headers: this._headers() },
-    );
+    const confirmed = [];
+    const unconfirmed = [];
 
-    const data = res.data || {};
+    for (const record of stamped) {
+      try {
+        const res = await http.post(
+          `${PURCHASE_URL}/upload/`,
+          [record], // single-record batch — isolates this record's outcome
+          { headers: this._headers() },
+        );
+
+        const data = res.data || {};
+        logger.debug(
+          `Uploaded purchase-source record for ${record.scrip ?? "unknown scrip"} (status=${data.status || data.statusCode}).`
+        );
+        confirmed.push({ record, response: data });
+      } catch (err) {
+        // CDSC answers this endpoint with a plain 404 (no useful JSON body)
+        // when a submitted record doesn't actually carry a confirmed
+        // purchase price — the exact condition the live MeroShare UI
+        // catches client-side with its own "Please confirm all purchase
+        // price." toast before ever calling this endpoint. Since we don't
+        // replicate that client-side check, CDSC's 404 is our first signal.
+        // This is an EXPECTED validation outcome for this one record, not
+        // a transport failure.
+        if (err.response?.status === 404) {
+          logger.debug(
+            `uploadPurchaseSource: CDSC returned 404 for record (scrip=${record.scrip ?? "unknown"}) — treating as unconfirmed purchase price.`
+          );
+          unconfirmed.push({ record, reason: "CDSC 404 — purchase price not confirmed" });
+          continue;
+        }
+        // Anything else (5xx, network error, timeout, etc.) is a genuine
+        // unexpected failure — let it propagate as-is so it's logged and
+        // surfaced normally, not silently reinterpreted.
+        throw err;
+      }
+    }
+
+    if (confirmed.length === 0 && unconfirmed.length > 0) {
+      // Nothing succeeded — expected CDSC state (no confirmed prices yet),
+      // not a server error. Resolve normally instead of throwing, so it
+      // doesn't get logged as an uncaught error upstream. Callers should
+      // check `unconfirmed.length` / `confirmed.length` to decide what to
+      // show the user (e.g. "please confirm your purchase price on
+      // MeroShare first") rather than relying on a caught exception.
+      logger.debug(
+        `uploadPurchaseSource: all ${unconfirmed.length} record(s) unconfirmed — no records to upload yet.`
+      );
+      return { confirmed, unconfirmed };
+    }
+
     logger.debug(
-      `Uploaded ${stamped.length} purchase-source record(s) (status=${data.status || data.statusCode}).`
+      `uploadPurchaseSource complete: ${confirmed.length} confirmed, ${unconfirmed.length} unconfirmed.`
     );
-    return data;
+    return { confirmed, unconfirmed };
   }
 
   // POST /api/myPurchase/view/

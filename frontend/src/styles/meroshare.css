@@ -33,6 +33,18 @@
   color: var(--r);
   border-color: rgba(var(--r-rgb), 0.3);
   background: var(--loss-bg);
+
+  /* Real MeroShare error/warning banners are a compact, left-aligned
+     strip — icon + message on the left, action on the right — not the
+     tall centered block .ms-state uses for loading/empty states.
+     Override the inherited layout for this variant only. */
+  text-align: left;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  gap: 12px;
 }
 
 .ms-relogin {
@@ -45,6 +57,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
+  flex-shrink: 0;
 }
 
 .ms-relogin:hover { opacity: 0.85; }
@@ -147,6 +160,20 @@
   color: var(--warn);
   border-color: rgba(var(--warn-rgb), 0.35);
   background: var(--warn-bg);
+}
+
+/* Legal declaration shown above "Proceed" for scrips with pending
+   (not-yet-completed) WACC — same amber/warn palette as .ms-state--warn,
+   but a compact inline banner rather than a full empty-state block. */
+.ms-wacc-declaration {
+  margin: 0 20px 16px;
+  padding: 12px 16px;
+  background: var(--warn-bg);
+  border: 1px solid rgba(var(--warn-rgb), 0.35);
+  border-radius: 10px;
+  color: var(--warn);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 /* Export buttons row */
