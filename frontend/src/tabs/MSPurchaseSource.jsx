@@ -311,7 +311,7 @@ function PurchaseSourceTab() {
       const result    = await confirmPurchaseWacc(toSubmit);
       const succeeded = result?.statusCode === 202 || result?.status === "ACCEPTED";
       if (!succeeded) {
-        setUploadStatus({ succeeded: false, message: result?.message || "Upload was not accepted." });
+        setUploadStatus({ succeeded: false, message: result?.message || "Please Confirm all Purchase prices" });
         return;
       }
       setUploadStatus({ succeeded: true, message: result?.message || "My purchase updates done." });
