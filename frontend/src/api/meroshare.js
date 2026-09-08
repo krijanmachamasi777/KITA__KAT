@@ -119,3 +119,33 @@ export const getMyHoldings = (token) =>
 // My WACC tab — demat is never sent from here; resolved server-side.
 export const getWaccReport = (token) =>
   apiFetch("/purchase-source/wacc-report", token);
+
+// ── IPO Apply ("Apply for Company Share") ─────────────────────────────
+// Live calls — backend restores the user's MeroShare session per
+// request, same 401 + { sessionExpired: true } contract as every other
+// module here. demat/boid are never sent from the frontend; the backend
+// always resolves them from the authenticated session.
+export const getIpoEligibility = (token, companyShareId) =>
+  apiFetch(`/ipo-apply/eligibility/${encodeURIComponent(companyShareId)}`, token);
+
+export const getIpoIssueDetail = (token, companyShareId) =>
+  apiFetch(`/ipo-apply/issue/${encodeURIComponent(companyShareId)}`, token);
+
+export const getIpoBanks = (token) =>
+  apiFetch("/ipo-apply/banks", token);
+
+export const getIpoBankAccount = (token, bankId) =>
+  apiFetch(`/ipo-apply/banks/${encodeURIComponent(bankId)}`, token);
+
+export const getIpoApplyDisclaimer = (token) =>
+  apiFetch("/ipo-apply/disclaimer", token);
+
+// Final submit — the transaction-PIN-bearing POST. `payload` must be
+// exactly the fields the backend's validateIpoApplySubmit whitelists:
+// { companyShareId, bankId, accountNumber, accountBranchId,
+//   accountTypeId, customerId, appliedKitta, crnNumber, transactionPIN }
+export const submitIpoApply = (token, payload) =>
+  apiFetch("/ipo-apply/submit", token, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });

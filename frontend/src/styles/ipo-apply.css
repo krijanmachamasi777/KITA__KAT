@@ -1,0 +1,204 @@
+/* ── IPO APPLY MODAL ───────────────────────────────────────
+   Styles for components/ApplyIpoModal.jsx — replicates the real
+   MeroShare "Apply for Company Share" flow. Reuses the shared
+   .modal / .overlay / .f-input / .btn / .badge / .ms-state classes
+   from modals.css, global.css and meroshare.css; only adds what
+   those don't already cover.
+   ──────────────────────────────────────────────────────────── */
+
+.ipo-apply-modal { max-width: 720px; }
+
+/* ── Issue header card (step 1) ── */
+.ipo-header-card {
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.ipo-header-card__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--fg);
+}
+
+.ipo-header-card__sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.ipo-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.ipo-info-item__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ipo-info-item__value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  font-family: var(--mono);
+  margin-top: 3px;
+}
+
+.ipo-prospectus-btn {
+  display: inline-flex;
+  margin-top: 16px;
+  text-decoration: none;
+}
+
+/* ── Field-level validation message ── */
+.ipo-field-error {
+  font-size: 11px;
+  color: var(--r);
+  margin-top: 2px;
+}
+
+/* ── Disclaimer checkbox row ── */
+.ipo-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: var(--s2);
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ipo-disclaimer input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--acc);
+  cursor: pointer;
+}
+
+/* ── Step 2: transaction PIN ── */
+.ipo-pin-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 0 4px;
+}
+
+.ipo-pin-icon {
+  font-size: 44px;
+  margin: 20px 0 14px;
+}
+
+.ipo-pin-label {
+  font-size: 13px;
+  color: var(--fg);
+  margin-bottom: 12px;
+}
+
+.ipo-pin-input {
+  max-width: 200px;
+  text-align: center;
+  letter-spacing: 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.ipo-pin-step .form-actions {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ── Success state ── */
+.ipo-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 0 4px;
+}
+
+.ipo-success__icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+.ipo-success__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+  max-width: 420px;
+}
+
+.ipo-success .form-actions {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 520px) {
+  .ipo-info-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Issue list (tabs/MSIpos.jsx) ──────────────────────────
+   Mirrors the real MeroShare "My ASBA → Apply for Issue" list:
+   one row per issue — company, subgroup/scrip, type badge, share
+   group — with an action button on the right that disappears once
+   the issue has been applied for (no edit affordance in this app).
+   ──────────────────────────────────────────────────────────── */
+.ipo-issue-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ipo-issue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--b);
+  flex-wrap: wrap;
+}
+
+.ipo-issue-row:last-child { border-bottom: none; }
+
+.ipo-issue-row__info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ipo-issue-row__company {
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.ipo-issue-row__sep,
+.ipo-issue-row__dot {
+  color: var(--muted);
+}
+
+.ipo-issue-row__subgroup,
+.ipo-issue-row__group {
+  color: var(--muted);
+}
+
+.ipo-issue-row__action { flex-shrink: 0; }

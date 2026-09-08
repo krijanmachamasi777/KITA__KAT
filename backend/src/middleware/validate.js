@@ -230,6 +230,93 @@ function validatePurchaseView(req, res, next) {
   next();
 }
 
+// ── IPO Apply validation ────────────────────────────────────────────
+//
+// Replicates the real MeroShare "Apply for Company Share" flow —
+// see backend/src/controllers/ipoApplyController.js and
+// backend/src/services/ipoApplyService.js.
+
+// :companyShareId route param (used by /eligibility/:id and /issue/:id).
+// CDSC's companyShareId is always numeric (e.g. 794) — reject anything
+// else before it's interpolated into the upstream URL.
+const NUMERIC_ID_RE = /^[0-9]{1,15}$/;
+function validateCompanyShareIdParam(req, res, next) {
+  if (!NUMERIC_ID_RE.test(String(req.params.companyShareId || ""))) {
+    return fail(res, "Invalid companyShareId parameter.");
+  }
+  next();
+}
+
+// :bankId route param (used by /banks/:bankId).
+function validateBankIdParam(req, res, next) {
+  if (!NUMERIC_ID_RE.test(String(req.params.bankId || ""))) {
+    return fail(res, "Invalid bankId parameter.");
+  }
+  next();
+}
+
+// POST /ipo-apply/submit body — whitelists exactly the fields
+// MeroShareClient.submitIpoApply() forwards to CDSC. `demat`/`boid` are
+// intentionally NOT in this whitelist: the service layer always
+// re-derives both from the authenticated session, so nothing sent here
+// can ever override them, even if a field with those names is present
+// in the raw request body.
+function validateIpoApplySubmit(req, res, next) {
+  if (!requireObjectBody(req, res)) return;
+  const body = req.body;
+  const out  = {};
+
+  const companyShareId = cleanString(body.companyShareId, { max: 20 });
+  if (!companyShareId || !NUMERIC_ID_RE.test(companyShareId)) {
+    return fail(res, "companyShareId is required and must be numeric.");
+  }
+  out.companyShareId = companyShareId;
+
+  const bankId = cleanString(body.bankId, { max: 20 });
+  if (!bankId || !NUMERIC_ID_RE.test(bankId)) {
+    return fail(res, "bankId is required and must be numeric.");
+  }
+  out.bankId = bankId;
+
+  const accountNumber = cleanString(body.accountNumber, { max: 50 });
+  if (!accountNumber) return fail(res, "accountNumber is required.");
+  out.accountNumber = accountNumber;
+
+  const accountBranchId = toNumberOrNull(body.accountBranchId);
+  if (accountBranchId === null) return fail(res, "accountBranchId must be a valid number.");
+  out.accountBranchId = accountBranchId;
+
+  const accountTypeId = toNumberOrNull(body.accountTypeId);
+  if (accountTypeId === null) return fail(res, "accountTypeId must be a valid number.");
+  out.accountTypeId = accountTypeId;
+
+  const customerId = toNumberOrNull(body.customerId);
+  if (customerId === null) return fail(res, "customerId must be a valid number.");
+  out.customerId = customerId;
+
+  const appliedKitta = cleanString(body.appliedKitta, { max: 20 });
+  if (!appliedKitta || !/^[0-9]+$/.test(appliedKitta)) {
+    return fail(res, "appliedKitta is required and must be a whole number.");
+  }
+  out.appliedKitta = appliedKitta;
+
+  const crnNumber = cleanString(body.crnNumber, { max: 50 });
+  if (!crnNumber) return fail(res, "crnNumber is required.");
+  out.crnNumber = crnNumber;
+
+  // Transaction PIN — CDSC's own field is a 4-digit numeric PIN (see the
+  // "Please enter your 4 digits transaction PIN to proceed" screen on
+  // the real site). Enforced here so a malformed PIN never reaches CDSC.
+  const transactionPIN = cleanString(body.transactionPIN, { max: 10 });
+  if (!/^[0-9]{4}$/.test(transactionPIN)) {
+    return fail(res, "transactionPIN must be exactly 4 digits.");
+  }
+  out.transactionPIN = transactionPIN;
+
+  req.body = out;
+  next();
+}
+
 module.exports = {
   validateJournalTrade,
   validateInvestmentTrade,
@@ -241,4 +328,8 @@ module.exports = {
   validatePurchaseSearch,
   validatePurchaseUpload,
   validatePurchaseView,
+
+  validateCompanyShareIdParam,
+  validateBankIdParam,
+  validateIpoApplySubmit,
 };

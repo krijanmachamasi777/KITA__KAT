@@ -530,6 +530,136 @@ class MeroShareClient {
       return [];
     }
   }
+
+  // ── IPO / Apply for Company Share ────────────────────────────────────
+  //
+  // Replicates the real MeroShare "Apply for Company Share" flow. All
+  // endpoints below share the existing AUTH_URL base
+  // (https://webbackend.cdsc.com.np/api/meroShare) — no new base URL
+  // needed. Contracts captured directly from the live MeroShare site's
+  // Network tab (companyShareId 794 / scrip BENI).
+
+  // GET /api/meroShare/applicantForm/customerType/{companyShareId}/{demat}
+  // Confirms the logged-in customer is allowed to apply for this specific
+  // issue. CDSC answers 202 + { status: "ACCEPTED" } when eligible; any
+  // other status (e.g. already applied) is returned as-is so the caller
+  // can surface CDSC's own message instead of guessing.
+  async checkIpoEligibility(companyShareId) {
+    this._requireAuth();
+    this._requireBoid();
+
+    const res = await http.get(
+      `${AUTH_URL}/applicantForm/customerType/${companyShareId}/${this.boid}`,
+      { headers: this._headers() }
+    );
+    const data = res.data || {};
+    logger.debug(
+      `IPO eligibility check for issue ${companyShareId}: ${data.status || data.statusCode}`
+    );
+    return data;
+  }
+
+  // GET /api/meroShare/active/{companyShareId}
+  // Full issue detail: min/max unit, multipleOf, share value, dates,
+  // prospectus link — everything the "Apply for Company Share" header
+  // section needs.
+  async getIpoIssueDetail(companyShareId) {
+    this._requireAuth();
+    const res = await http.get(`${AUTH_URL}/active/${companyShareId}`, {
+      headers: this._headers(),
+    });
+    logger.debug(`Fetched IPO issue detail for ${companyShareId}.`);
+    return res.data || {};
+  }
+
+  // GET /api/meroShare/bank/
+  // List of the user's linked ASBA banks (id, code, name) — populates
+  // the Bank dropdown.
+  async getIpoBanks() {
+    this._requireAuth();
+    const res = await http.get(`${AUTH_URL}/bank/`, {
+      headers: this._headers(),
+    });
+    const banks = Array.isArray(res.data) ? res.data : [];
+    logger.debug(`Fetched ${banks.length} ASBA bank(s).`);
+    return banks;
+  }
+
+  // GET /api/meroShare/bank/{bankId}
+  // Account detail for the chosen bank — branch name, account number,
+  // account type, and the numeric `id` (used as `customerId` on submit).
+  // CDSC returns an array; the real Apply form auto-fills Branch/account
+  // from the first entry, so this does the same.
+  async getIpoBankAccount(bankId) {
+    this._requireAuth();
+    const res = await http.get(`${AUTH_URL}/bank/${bankId}`, {
+      headers: this._headers(),
+    });
+    const accounts = Array.isArray(res.data) ? res.data : [];
+    logger.debug(`Fetched ${accounts.length} account(s) for bank ${bankId}.`);
+    return accounts;
+  }
+
+  // GET /api/meroShare/disclaimer/
+  // Legal disclaimer text shown above the Proceed button — server-driven
+  // (isEnabled / fieldValue), never hardcoded.
+  async getIpoDisclaimer() {
+    this._requireAuth();
+    const res = await http.get(`${AUTH_URL}/disclaimer/`, {
+      headers: this._headers(),
+    });
+    const data = res.data || {};
+    logger.debug(`Fetched IPO apply disclaimer (enabled=${data.isEnabled}).`);
+    return data;
+  }
+
+  // POST /api/meroShare/applicantForm/share/apply
+  //
+  // Final submit — actually applies for the shares. `demat` and `boid`
+  // are ALWAYS derived from the authenticated session (this.boid holds
+  // the full demat, e.g. "1301520001586774"; CDSC's payload wants the
+  // full demat in `demat` and only the last 8 digits in `boid`, e.g.
+  // "01586774" — exactly what the live site sends), never accepted from
+  // the caller, so a forged demat/boid can never reach CDSC even if it
+  // slipped past validation upstream.
+  //
+  // `params` (caller-supplied, already whitelisted by
+  // validateIpoApplySubmit before this runs):
+  //   companyShareId, bankId, accountNumber, accountBranchId,
+  //   accountTypeId, customerId, appliedKitta, crnNumber, transactionPIN
+  async submitIpoApply(params = {}) {
+    this._requireAuth();
+    this._requireBoid();
+
+    const fullDemat = String(this.boid);
+    const shortBoid = fullDemat.slice(-8);
+
+    const payload = {
+      demat: fullDemat,
+      boid: shortBoid,
+      companyShareId: String(params.companyShareId),
+      bankId: String(params.bankId),
+      accountNumber: String(params.accountNumber),
+      accountBranchId: params.accountBranchId,
+      accountTypeId: params.accountTypeId,
+      customerId: params.customerId,
+      appliedKitta: String(params.appliedKitta),
+      crnNumber: String(params.crnNumber),
+      transactionPIN: String(params.transactionPIN),
+    };
+
+    const res = await http.post(
+      `${AUTH_URL}/applicantForm/share/apply`,
+      payload,
+      { headers: this._headers() }
+    );
+
+    const data = res.data || {};
+    logger.info(
+      `IPO apply submitted for issue ${params.companyShareId} (status=${data.statusCode || data.status}).`
+    );
+    return data;
+  }
 }
 
 module.exports = MeroShareClient;

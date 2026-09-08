@@ -5,6 +5,7 @@ const authCtrl         = require("../controllers/authController");
 const journalCtrl      = require("../controllers/journalController");
 const watchlistCtrl    = require("../controllers/watchlistController");
 const purchaseSourceCtrl = require("../controllers/purchaseSourceController");
+const ipoApplyCtrl     = require("../controllers/ipoApplyController");
 const protect          = require("../middleware/auth");
 const { loginLimiter, apiLimiter } = require("../middleware/rateLimiter");
 const {
@@ -19,6 +20,10 @@ const {
   validatePurchaseSearch,
   validatePurchaseUpload,
   validatePurchaseView,
+
+  validateCompanyShareIdParam,
+  validateBankIdParam,
+  validateIpoApplySubmit,
 } = require("../middleware/validate");
 
 router.get("/health", (req, res) =>
@@ -60,6 +65,15 @@ router.post("/purchase-source/upload",        validatePurchaseUpload,  purchaseS
 router.post("/purchase-source/view",          validatePurchaseView,    purchaseSourceCtrl.viewSummary);
 router.get("/purchase-source/holdings",       purchaseSourceCtrl.getHoldings);
 router.get("/purchase-source/wacc-report",    purchaseSourceCtrl.getWaccReport);
+
+// ── IPO Apply (live MeroShare calls — see ipoApplyService) ──────────────
+// Replicates the real MeroShare "Apply for Company Share" flow.
+router.get("/ipo-apply/eligibility/:companyShareId", validateCompanyShareIdParam, ipoApplyCtrl.getEligibility);
+router.get("/ipo-apply/issue/:companyShareId",       validateCompanyShareIdParam, ipoApplyCtrl.getIssueDetail);
+router.get("/ipo-apply/banks",                       ipoApplyCtrl.getBanks);
+router.get("/ipo-apply/banks/:bankId",               validateBankIdParam, ipoApplyCtrl.getBankAccount);
+router.get("/ipo-apply/disclaimer",                  ipoApplyCtrl.getDisclaimer);
+router.post("/ipo-apply/submit",                     validateIpoApplySubmit, ipoApplyCtrl.submit);
 
 router.get("/journal-trades",      journalCtrl.getJournalTrades);
 router.post("/journal-trades",     validateJournalTrade, journalCtrl.createJournalTrade);

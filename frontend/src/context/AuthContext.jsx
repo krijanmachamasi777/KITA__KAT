@@ -12,6 +12,8 @@ import {
   getPurchaseDisclaimer, getPurchaseScripts, searchPurchaseScript,
   uploadPurchaseWacc, viewPurchaseSummary,
   getMyHoldings, getWaccReport,
+  getIpoEligibility, getIpoIssueDetail, getIpoBanks, getIpoBankAccount,
+  getIpoApplyDisclaimer, submitIpoApply,
 } from "../api/meroshare";
 
 const AuthContext = createContext(null);
@@ -208,6 +210,14 @@ export function AuthProvider({ children }) {
   const fetchMyHoldings         = useCallback(()        => getMyHoldings(token),                [token]);
   const fetchWaccReport         = useCallback(()        => getWaccReport(token),                [token]);
 
+  // ── IPO Apply ("Apply for Company Share") ──────────────────────────
+  const fetchIpoEligibility  = useCallback((companyShareId) => getIpoEligibility(token, companyShareId),  [token]);
+  const fetchIpoIssueDetail  = useCallback((companyShareId) => getIpoIssueDetail(token, companyShareId),  [token]);
+  const fetchIpoBanks        = useCallback(()               => getIpoBanks(token),                        [token]);
+  const fetchIpoBankAccount  = useCallback((bankId)          => getIpoBankAccount(token, bankId),          [token]);
+  const fetchIpoDisclaimer   = useCallback(()               => getIpoApplyDisclaimer(token),               [token]);
+  const applyForIpo          = useCallback((payload)         => submitIpoApply(token, payload),            [token]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -248,6 +258,12 @@ export function AuthProvider({ children }) {
         fetchPurchaseSummary,
         fetchMyHoldings,
         fetchWaccReport,
+        fetchIpoEligibility,
+        fetchIpoIssueDetail,
+        fetchIpoBanks,
+        fetchIpoBankAccount,
+        fetchIpoDisclaimer,
+        applyForIpo,
       }}
     >
       {children}
