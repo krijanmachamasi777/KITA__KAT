@@ -12,13 +12,24 @@
 //     matching the real site's "Edit" affordance being intentionally
 //     dropped here).
 //
-// "Already applied" is derived two ways so the UI updates instantly:
-//   1. CDSC's own signal, persisted from sync: statusName === "EDIT_APPROVE"
-//      (see backend/src/schemas/applicableIssueSchema.js) — this is what
-//      the live MeroShare API itself uses to switch Apply → Edit.
-//   2. A local, in-memory "just applied this session" set, so the row
-//      updates the instant a submission succeeds, without waiting for
-//      the next full portfolio sync to refresh statusName from CDSC.
+// "Already applied" is derived from a local, in-memory "just applied
+// this session" set, so the row updates the instant a submission
+// succeeds — without waiting for the next full portfolio sync.
+//
+// NOTE: we deliberately do NOT gate the button on the applicableIssue
+// list's synced `statusName` field (see
+// backend/src/schemas/applicableIssueSchema.js). That field comes from
+// CDSC's bulk "open issues" list, not from a real per-user "has this
+// user applied to this issue" check, and its value isn't reliably
+// user-specific — it was found to sometimes equal "EDIT_APPROVE" for
+// issues a given user had never actually applied to, which hid the
+// Apply button entirely and silently for those users. The real,
+// authoritative per-user check already exists and is already called
+// correctly — GET /api/ipo-apply/eligibility/:companyShareId, wired up
+// in ApplyIpoModal's bootstrap() — so we always render the button and
+// let the modal's eligibility check (which shows a proper "not
+// eligible" message when CDSC confirms the user already applied) be
+// the single source of truth instead of pre-guessing here.
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { ApplyIpoModal } from "../components/ApplyIpoModal";
@@ -48,7 +59,6 @@ export function MSIpos() {
   };
 
   const isApplied = (iss) =>
-    iss.statusName === "EDIT_APPROVE" ||
     appliedLocally.has(String(iss.companyShareId ?? iss.id));
 
   const handleApplied = (iss) => {
