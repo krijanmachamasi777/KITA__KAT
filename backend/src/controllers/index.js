@@ -24,6 +24,18 @@ function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// issueCloseDate is stored as a free-form string (whatever MeroShare sends),
+// so it can't be reliably compared inside a Mongo query — parse it in JS
+// instead. Mirrors syncService's isStillOpen(): a missing/unparseable date
+// is treated as still open rather than hidden.
+function isStillOpen(issueCloseDate, now) {
+  if (!issueCloseDate) return true;
+  const closeDate = new Date(issueCloseDate);
+  if (Number.isNaN(closeDate.getTime())) return true;
+  closeDate.setHours(23, 59, 59, 999);
+  return closeDate.getTime() >= now.getTime();
+}
+
 // Uses the unique, immutable username (not the MeroShare display name) so
 // per-user MongoDB collections can't collide when two users share a name.
 function getUserName(req) {
@@ -154,10 +166,11 @@ exports.getApplicableIssues = async (req, res) => {
     const filter    = type
       ? { shareTypeName: new RegExp(escapeRegex(String(type).slice(0, 100)), "i") }
       : {};
-    const issues    = await ApplicableIssue.find(filter)
+    const now       = new Date();
+    const issues    = (await ApplicableIssue.find(filter)
       .sort({ issueOpenDate: -1 })
       .select("-__v -createdAt -updatedAt")
-      .lean();
+      .lean()).filter((iss) => isStillOpen(iss.issueCloseDate, now));
     ok(res, issues, { total: issues.length });
   } catch (e) {
     logger.error(e);

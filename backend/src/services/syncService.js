@@ -170,12 +170,30 @@ async function syncPortfolio(client, username) {
   return count + 1;
 }
 
+// An issue's close date only carries a calendar day (no time), so treat the
+// entire close date as still "open" until the day is over — an issue closing
+// "today" should still be considered open until midnight, not the instant
+// its date string is parsed.
+function isStillOpen(issueCloseDate, now) {
+  if (!issueCloseDate) return true; // unknown close date → don't drop it
+  const closeDate = new Date(issueCloseDate);
+  if (Number.isNaN(closeDate.getTime())) return true; // unparseable → don't drop it
+  closeDate.setHours(23, 59, 59, 999);
+  return closeDate.getTime() >= now.getTime();
+}
+
 async function syncApplicableIssues(client, username) {
   const ApplicableIssue = await getModel(username, "applicableissues");
   const { issues }      = await client.getApplicableIssues();
   const now             = new Date();
 
-  const docs = issues.map((iss) => ({
+  // MeroShare's applicable-issue list is meant to only contain currently
+  // open issues, but it has been observed to still include issues whose
+  // close date has already passed. Filter those out before they ever reach
+  // the database so a closed IPO is never (re-)saved.
+  const openIssues = issues.filter((iss) => isStillOpen(iss.issueCloseDate, now));
+
+  const docs = openIssues.map((iss) => ({
     companyShareId: iss.companyShareId,
     scrip:          iss.scrip || iss.script,
     companyName:    iss.companyName || iss.name,
@@ -189,6 +207,22 @@ async function syncApplicableIssues(client, username) {
   }));
 
   const count = await bulkUpsert(ApplicableIssue, ["companyShareId"], docs);
+
+  // Clean up records left over from previous syncs: anything that is no
+  // longer in MeroShare's open-issue list (either it closed, or it was
+  // saved before this filter existed) gets removed so closed IPOs stop
+  // being displayed.
+  const stillOpenIds = openIssues
+    .map((iss) => iss.companyShareId)
+    .filter((id) => id !== undefined && id !== null);
+
+  const { deletedCount } = await ApplicableIssue.deleteMany({
+    companyShareId: { $nin: stillOpenIds },
+  });
+  if (deletedCount) {
+    logger.info(`  🗑️  Removed ${deletedCount} closed/stale applicable issue(s).`);
+  }
+
   logger.info(`  ✔ Applicable issues synced: ${count} records.`);
   return count;
 }
